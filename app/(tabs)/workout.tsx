@@ -106,6 +106,48 @@ export default function WorkoutScreen() {
     );
   };
 
+  const handleFinishWorkout = async () => {
+    if (!activeSessionId) return;
+
+    if (currentSets.length === 0) {
+      Alert.alert(
+        'Empty Workout',
+        'No sets were recorded. Do you still want to finish this session?',
+        [
+          { text: 'Keep Training', style: 'cancel' },
+          {
+            text: 'Finish Anyway',
+            onPress: async () => {
+              const duration = Math.max(1, Math.round((Date.now() - sessionStartTime) / 1000));
+              await WorkoutRepo.completeSession(activeSessionId, duration);
+              await loadSessions();
+              setIsSessionModalOpen(false);
+              setActiveSessionId(null);
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    try {
+      const duration = Math.max(1, Math.round((Date.now() - sessionStartTime) / 1000));
+      const totalVolume = currentSets.reduce((sum, s) => sum + s.weight_kg * s.reps, 0);
+
+      await WorkoutRepo.completeSession(activeSessionId, duration);
+      await loadSessions();
+      setIsSessionModalOpen(false);
+      setActiveSessionId(null);
+
+      Alert.alert(
+        'Workout Completed! 🎉',
+        `Logged ${currentSets.length} sets with ${totalVolume} kg total volume in ${Math.round(duration / 60)} mins.`
+      );
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Could not complete workout');
+    }
+  };
+
   return (
     <ScreenContainer scrollable>
       <Header
@@ -304,6 +346,12 @@ export default function WorkoutScreen() {
                 variant="danger"
                 onPress={handleDiscardWorkout}
                 style={{ flex: 1 }}
+              />
+              <Button
+                title="Finish Workout"
+                variant="primary"
+                onPress={handleFinishWorkout}
+                style={{ flex: 1.5, marginLeft: 10 }}
               />
             </View>
           </View>
