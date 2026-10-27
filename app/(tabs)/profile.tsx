@@ -9,21 +9,27 @@ import { Palette } from '@/constants/Colors';
 import { useDatabase } from '@/src/hooks/useDatabase';
 import { UserRepo } from '@/src/db/repositories/userRepo';
 import { BackupRepo } from '@/src/db/repositories/backupRepo';
+import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
 import { resetDatabase } from '@/src/db/database';
-import { UserProfile } from '@/src/types/database';
-import { User, Settings, ShieldCheck, Download, Upload, RotateCcw, Award } from 'lucide-react-native';
+import { UserProfile, Achievement } from '@/src/types/database';
+import { User, Settings, ShieldCheck, Download, Upload, RotateCcw, Award, Trophy, Lock } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const { isReady } = useDatabase();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [exporting, setExporting] = useState(false);
 
   const loadProfile = async () => {
     try {
-      const u = await UserRepo.getProfile();
+      const [u, achs] = await Promise.all([
+        UserRepo.getProfile(),
+        GoalsRepo.getAchievements(),
+      ]);
       setProfile(u);
+      setAchievements(achs);
     } catch (e) {
-      console.error('Error loading profile:', e);
+      console.error('Error loading profile & achievements:', e);
     }
   };
 
@@ -191,6 +197,51 @@ export default function ProfileScreen() {
           style={{ marginTop: 14 }}
         />
       </Card>
+
+      {/* Achievements Showcase */}
+      <View style={styles.sectionHeader}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Trophy size={18} color={Palette.primary} />
+          <Text style={styles.sectionTitle}>
+            Achievements ({achievements.filter((a) => a.unlocked_at).length} / {achievements.length})
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginBottom: 20 }}
+      >
+        {achievements.map((item) => {
+          const isUnlocked = Boolean(item.unlocked_at);
+          return (
+            <Card
+              key={item.id}
+              accent={isUnlocked ? 'primary' : undefined}
+              style={[
+                styles.achievementCard,
+                !isUnlocked && { opacity: 0.65 },
+              ]}
+            >
+              <View style={styles.achievementIconCircle}>
+                {isUnlocked ? (
+                  <Award size={22} color={Palette.primary} />
+                ) : (
+                  <Lock size={20} color={Palette.textMuted} />
+                )}
+              </View>
+              <Text style={styles.achievementTitle}>{item.title}</Text>
+              <Text style={styles.achievementDesc}>{item.description}</Text>
+              <Badge
+                label={isUnlocked ? 'UNLOCKED' : 'LOCKED'}
+                variant={isUnlocked ? 'primary' : 'neutral'}
+                style={{ marginTop: 8 }}
+              />
+            </Card>
+          );
+        })}
+      </ScrollView>
 
       {/* Backup & Data Management */}
       <View style={styles.sectionHeader}>
@@ -529,5 +580,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 18,
     marginBottom: 10,
+  },
+  achievementCard: {
+    width: 170,
+    padding: 14,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  achievementIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Palette.primaryGlow,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  achievementTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Palette.text,
+    textAlign: 'center',
+  },
+  achievementDesc: {
+    fontSize: 11,
+    color: Palette.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 15,
   },
 });
