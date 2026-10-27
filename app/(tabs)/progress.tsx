@@ -5,19 +5,26 @@ import { Header } from '@/src/components/common/Header';
 import { Card } from '@/src/components/common/Card';
 import { Button } from '@/src/components/common/Button';
 import { Badge } from '@/src/components/common/Badge';
+import { ProgressBar } from '@/src/components/common/ProgressBar';
 import { Palette } from '@/constants/Colors';
 import { useDatabase } from '@/src/hooks/useDatabase';
 import { WorkoutRepo } from '@/src/db/repositories/workoutRepo';
 import { BodyRepo } from '@/src/db/repositories/bodyRepo';
 import { UserRepo } from '@/src/db/repositories/userRepo';
-import { Exercise, BodyMeasurement } from '@/src/types/database';
-import { TrendingUp, Award, Activity, Scale, ChevronRight } from 'lucide-react-native';
+import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
+import { Exercise, BodyMeasurement, FitnessGoal } from '@/src/types/database';
+import { TrendingUp, Award, Activity, Scale, ChevronRight, Target, Plus, Check } from 'lucide-react-native';
 
 export default function ProgressScreen() {
   const { isReady } = useDatabase();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [latestMeasurement, setLatestMeasurement] = useState<BodyMeasurement | null>(null);
+  const [goals, setGoals] = useState<FitnessGoal[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Goal Modal State
+  const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState(false);
+  const [goalForm, setGoalForm] = useState({ title: '', targetValue: '', unit: 'kg' });
 
   // Measurement Modal States
   const [isMeasurementModalOpen, setIsMeasurementModalOpen] = useState(false);
@@ -51,12 +58,14 @@ export default function ProgressScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [exs, bm] = await Promise.all([
+      const [exs, bm, g] = await Promise.all([
         WorkoutRepo.getExercises(),
         BodyRepo.getLatestMeasurement(),
+        GoalsRepo.getGoals(),
       ]);
       setExercises(exs.slice(0, 8));
       setLatestMeasurement(bm);
+      setGoals(g);
       if (bm) {
         setWeightInput(String(bm.weight_kg));
       }
@@ -64,6 +73,30 @@ export default function ProgressScreen() {
       console.error('Error loading progress:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateGoal = async () => {
+    const target = parseFloat(goalForm.targetValue);
+    if (!goalForm.title.trim() || isNaN(target) || target <= 0) {
+      Alert.alert('Required', 'Please enter a goal title and target value');
+      return;
+    }
+    try {
+      await GoalsRepo.createGoal({
+        title: goalForm.title.trim(),
+        category: 'strength',
+        target_value: target,
+        current_value: 0,
+        unit: goalForm.unit.trim() || 'kg',
+      });
+      const updatedGoals = await GoalsRepo.getGoals();
+      setGoals(updatedGoals);
+      setIsAddGoalModalOpen(false);
+      setGoalForm({ title: '', targetValue: '', unit: 'kg' });
+      Alert.alert('Goal Added', 'New fitness goal created.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Could not create goal');
     }
   };
 
@@ -122,8 +155,49 @@ export default function ProgressScreen() {
         </View>
       </Card>
 
+      {/* Active Fitness Goals */}
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.sectionTitleGroup}>
+          <Target size={18} color={Palette.primary} />
+          <Text style={styles.sectionTitle}>Fitness Goals</Text>
+        </View>
+        <Button
+          title="+ Goal"
+          size="small"
+          variant="ghost"
+          textStyle={{ color: Palette.primary }}
+          onPress={() => setIsAddGoalModalOpen(true)}
+        />
+      </View>
+
+      {goals.length === 0 ? (
+        <Card style={styles.emptyGoalCard}>
+          <Text style={{ color: Palette.textMuted, fontStyle: 'italic', fontSize: 13, textAlign: 'center' }}>
+            No goals set yet. Tap "+ Goal" to set a strength or physique milestone!
+          </Text>
+        </Card>
+      ) : (
+        goals.map((g) => (
+          <Card key={g.id} style={{ padding: 14, marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: Palette.text }}>{g.title}</Text>
+              <Badge
+                label={g.is_completed ? 'COMPLETED' : `${g.target_value} ${g.unit}`}
+                variant={g.is_completed ? 'primary' : 'secondary'}
+              />
+            </View>
+            <ProgressBar
+              current={g.current_value}
+              target={g.target_value}
+              unit={g.unit}
+              color={g.is_completed ? Palette.primary : Palette.secondary}
+            />
+          </Card>
+        ))
+      )}
+
       {/* Exercise Progression Directory */}
-      <View style={styles.sectionHeader}>
+      <View style={[styles.sectionHeader, { marginTop: 14 }]}>
         <Text style={styles.sectionTitle}>Exercise Progression</Text>
         <Text style={styles.sectionSub}>Select an exercise to view charts & history</Text>
       </View>
@@ -297,6 +371,67 @@ export default function ProgressScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Add Goal Modal */}
+      <Modal
+        visible={isAddGoalModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsAddGoalModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>New Fitness Milestone</Text>
+            <Text style={styles.inputLabel}>Goal Title</Text>
+            <TextInput
+              style={styles.textInput}
+              value={goalForm.title}
+              onChangeText={(t) => setGoalForm({ ...goalForm, title: t })}
+              placeholder="e.g. Bench Press 100kg"
+              placeholderTextColor={Palette.textMuted}
+            />
+
+            <View style={styles.formRow}>
+              <View style={{ flex: 1.5 }}>
+                <Text style={styles.inputLabel}>Target Value</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={goalForm.targetValue}
+                  onChangeText={(t) => setGoalForm({ ...goalForm, targetValue: t })}
+                  keyboardType="numeric"
+                  placeholder="100"
+                  placeholderTextColor={Palette.textMuted}
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.inputLabel}>Unit</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={goalForm.unit}
+                  onChangeText={(t) => setGoalForm({ ...goalForm, unit: t })}
+                  placeholder="kg, reps, d"
+                  placeholderTextColor={Palette.textMuted}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalBtnRow}>
+              <Button
+                title="Cancel"
+                variant="ghost"
+                onPress={() => setIsAddGoalModalOpen(false)}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Create Goal"
+                variant="primary"
+                onPress={handleCreateGoal}
+                style={{ flex: 1, marginLeft: 10 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -332,6 +467,23 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sectionHeader: {
+    marginBottom: 12,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 14,
+  },
+  sectionTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyGoalCard: {
+    padding: 16,
+    alignItems: 'center',
     marginBottom: 12,
   },
   sectionTitle: {
