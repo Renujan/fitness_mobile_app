@@ -118,6 +118,33 @@ export default function ProfileScreen() {
     }
   };
 
+  const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+  const [importJson, setImportJson] = useState('');
+  const [importing, setImporting] = useState(false);
+
+  const handleImportBackup = async () => {
+    if (!importJson.trim()) {
+      Alert.alert('Empty Data', 'Please paste valid FitTrack backup JSON.');
+      return;
+    }
+    try {
+      setImporting(true);
+      const result = await BackupRepo.importBackupData(importJson.trim());
+      if (result.success) {
+        await loadProfile();
+        setIsImportModalVisible(false);
+        setImportJson('');
+        Alert.alert('Success', result.message);
+      } else {
+        Alert.alert('Import Failed', result.message);
+      }
+    } catch (err: any) {
+      Alert.alert('Import Error', err?.message || 'Invalid backup format');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <ScreenContainer scrollable>
       <Header subtitle="SETTINGS & ACCOUNT" title="Profile" />
@@ -183,6 +210,22 @@ export default function ProfileScreen() {
             variant="outline"
             loading={exporting}
             onPress={handleExportBackup}
+          />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.rowItem}>
+          <Upload size={20} color={Palette.secondary} />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.actionTitle}>Import Backup (JSON)</Text>
+            <Text style={styles.actionSub}>Restore historical workouts & logs from JSON file</Text>
+          </View>
+          <Button
+            title="Import"
+            size="small"
+            variant="outline"
+            onPress={() => setIsImportModalVisible(true)}
           />
         </View>
 
@@ -310,6 +353,47 @@ export default function ProfileScreen() {
                 title="Save Changes"
                 variant="primary"
                 onPress={handleSaveProfile}
+                style={{ flex: 1, marginLeft: 10 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Import Backup Modal */}
+      <Modal
+        visible={isImportModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsImportModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Import Backup JSON</Text>
+            <Text style={[styles.actionSub, { marginBottom: 12, textAlign: 'center' }]}>
+              Paste your exported FitTrack JSON below to restore workouts and records.
+            </Text>
+            <TextInput
+              style={[styles.textInput, { height: 160, textAlignVertical: 'top' }]}
+              value={importJson}
+              onChangeText={setImportJson}
+              placeholder='{"version": 1, ...}'
+              placeholderTextColor={Palette.textMuted}
+              multiline
+            />
+
+            <View style={styles.modalBtnRow}>
+              <Button
+                title="Cancel"
+                variant="ghost"
+                onPress={() => setIsImportModalVisible(false)}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Restore Data"
+                variant="secondary"
+                loading={importing}
+                onPress={handleImportBackup}
                 style={{ flex: 1, marginLeft: 10 }}
               />
             </View>
