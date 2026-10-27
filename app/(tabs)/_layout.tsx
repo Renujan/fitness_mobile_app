@@ -71,13 +71,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* Hidden legacy tab screen if referenced by router */}
-      <Tabs.Screen
-        name="two"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }
