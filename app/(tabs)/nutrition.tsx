@@ -131,6 +131,28 @@ export default function NutritionScreen() {
     }
   };
 
+  const handleDeleteFood = (logId: number, foodName: string) => {
+    Alert.alert(
+      'Delete Entry',
+      `Remove ${foodName} from your log?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await NutritionRepo.deleteLog(logId);
+              await loadNutrition();
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'Could not delete entry');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const meals: { type: MealType; title: string }[] = [
     { type: 'breakfast', title: 'Breakfast' },
     { type: 'lunch', title: 'Lunch' },
@@ -224,7 +246,16 @@ export default function NutritionScreen() {
                       {log.serving_count} serving • {Math.round(log.protein)}g P • {Math.round(log.carbs)}g C • {Math.round(log.fat)}g F
                     </Text>
                   </View>
-                  <Text style={styles.foodCalories}>{Math.round(log.calories)} kcal</Text>
+                  <View style={styles.foodRowRight}>
+                    <Text style={styles.foodCalories}>{Math.round(log.calories)} kcal</Text>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteFood(log.id, log.food_name)}
+                      style={styles.deleteFoodBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Trash2 size={16} color={Palette.danger} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))
             )}
@@ -453,6 +484,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: Palette.secondary,
+  },
+  foodRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deleteFoodBtn: {
+    padding: 4,
   },
   modalOverlay: {
     flex: 1,
