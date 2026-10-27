@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, StatusBar, ViewStyle } from 'react-native';
+import { View, StyleSheet, ScrollView, ViewStyle } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Palette } from '@/constants/Colors';
 
@@ -18,7 +19,7 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
 }) => {
   return (
     <SafeAreaView style={[styles.safeArea, style]} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="light-content" backgroundColor={Palette.background} />
+      <StatusBar style="light" />
       {scrollable ? (
         <ScrollView
           style={styles.container}
