@@ -26,6 +26,28 @@ export default function ProgressScreen() {
   const [chestInput, setChestInput] = useState('');
   const [bodyFatInput, setBodyFatInput] = useState('');
 
+  // Exercise Detail Modal States
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [exerciseHistory, setExerciseHistory] = useState<
+    Array<{ date: string; max_weight: number; total_volume: number; sets: any[] }>
+  >([]);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const handleOpenExerciseDetail = async (exercise: Exercise) => {
+    setSelectedExercise(exercise);
+    setIsDetailModalOpen(true);
+    setLoadingDetail(true);
+    try {
+      const history = await WorkoutRepo.getExerciseHistory(exercise.id);
+      setExerciseHistory(history);
+    } catch (e) {
+      console.error('Error loading exercise history:', e);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -110,7 +132,11 @@ export default function ProgressScreen() {
         <ActivityIndicator color={Palette.primary} style={{ marginTop: 20 }} />
       ) : (
         exercises.map((ex) => (
-          <Card key={ex.id} onPress={() => {}} style={styles.exerciseCard}>
+          <Card
+            key={ex.id}
+            onPress={() => handleOpenExerciseDetail(ex)}
+            style={styles.exerciseCard}
+          >
             <View style={styles.exerciseRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.exerciseName}>{ex.name}</Text>
@@ -196,6 +222,78 @@ export default function ProgressScreen() {
                 style={{ flex: 1, marginLeft: 10 }}
               />
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Exercise Detail & Progression Modal */}
+      <Modal
+        visible={isDetailModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsDetailModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{selectedExercise?.name || 'Exercise Details'}</Text>
+            <View style={[styles.badgeRow, { justifyContent: 'center', marginBottom: 16 }]}>
+              {selectedExercise && (
+                <>
+                  <Badge label={selectedExercise.category} variant="primary" style={styles.badge} />
+                  <Badge label={selectedExercise.equipment} variant="neutral" style={styles.badge} />
+                  <Badge label={selectedExercise.target_muscle} variant="secondary" style={styles.badge} />
+                </>
+              )}
+            </View>
+
+            {loadingDetail ? (
+              <ActivityIndicator color={Palette.primary} style={{ marginVertical: 30 }} />
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+                {/* PR Banner */}
+                <Card accent="primary" style={{ padding: 14, marginBottom: 14 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: Palette.primary }}>
+                    PERSONAL RECORD (MAX WEIGHT)
+                  </Text>
+                  <Text style={{ fontSize: 24, fontWeight: '800', color: Palette.text, marginTop: 4 }}>
+                    {exerciseHistory.length > 0
+                      ? `${Math.max(...exerciseHistory.map((h) => h.max_weight))} kg`
+                      : 'No logged sets yet'}
+                  </Text>
+                </Card>
+
+                <Text style={[styles.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>
+                  History & Session Logs
+                </Text>
+
+                {exerciseHistory.length === 0 ? (
+                  <Text style={{ color: Palette.textMuted, fontStyle: 'italic', paddingVertical: 12 }}>
+                    No recorded training history for this exercise yet.
+                  </Text>
+                ) : (
+                  exerciseHistory.map((entry) => (
+                    <View key={entry.date} style={styles.historyRow}>
+                      <View>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: Palette.text }}>
+                          {entry.date}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: Palette.textSecondary, marginTop: 2 }}>
+                          {entry.sets.length} sets • Vol: {entry.total_volume} kg
+                        </Text>
+                      </View>
+                      <Badge label={`${entry.max_weight} kg max`} variant="secondary" />
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            )}
+
+            <Button
+              title="Close"
+              variant="outline"
+              onPress={() => setIsDetailModalOpen(false)}
+              style={{ marginTop: 14 }}
+            />
           </View>
         </View>
       </Modal>
@@ -313,5 +411,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 18,
     marginBottom: 10,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Palette.border,
   },
 });
