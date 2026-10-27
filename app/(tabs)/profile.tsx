@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Alert, Share } from 'react-native';
+import { StyleSheet, Text, View, Alert, Share, Modal, TextInput, ScrollView } from 'react-native';
 import { ScreenContainer } from '@/src/components/common/ScreenContainer';
 import { Header } from '@/src/components/common/Header';
 import { Card } from '@/src/components/common/Card';
@@ -73,6 +73,51 @@ export default function ProfileScreen() {
     );
   };
 
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    height_cm: '',
+    target_weight_kg: '',
+    calorie_target: '',
+    protein_target: '',
+    carb_target: '',
+    fat_target: '',
+  });
+
+  const openEditModal = () => {
+    if (profile) {
+      setEditForm({
+        name: profile.name,
+        height_cm: String(profile.height_cm),
+        target_weight_kg: String(profile.target_weight_kg),
+        calorie_target: String(profile.calorie_target),
+        protein_target: String(profile.protein_target),
+        carb_target: String(profile.carb_target),
+        fat_target: String(profile.fat_target),
+      });
+      setIsEditModalVisible(true);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      await UserRepo.updateProfile({
+        name: editForm.name.trim() || 'Athlete',
+        height_cm: parseFloat(editForm.height_cm) || 175,
+        target_weight_kg: parseFloat(editForm.target_weight_kg) || 75,
+        calorie_target: parseInt(editForm.calorie_target, 10) || 2400,
+        protein_target: parseInt(editForm.protein_target, 10) || 150,
+        carb_target: parseInt(editForm.carb_target, 10) || 260,
+        fat_target: parseInt(editForm.fat_target, 10) || 65,
+      });
+      await loadProfile();
+      setIsEditModalVisible(false);
+      Alert.alert('Updated', 'Profile and nutrition targets successfully updated.');
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Could not update profile');
+    }
+  };
+
   return (
     <ScreenContainer scrollable>
       <Header subtitle="SETTINGS & ACCOUNT" title="Profile" />
@@ -110,6 +155,14 @@ export default function ProfileScreen() {
             <Text style={styles.targetVal}>{profile?.fat_target || 65}g</Text>
           </View>
         </View>
+
+        <Button
+          title="Edit Profile & Targets"
+          size="small"
+          variant="outline"
+          onPress={openEditModal}
+          style={{ marginTop: 14 }}
+        />
       </Card>
 
       {/* Backup & Data Management */}
@@ -149,6 +202,120 @@ export default function ProfileScreen() {
           />
         </View>
       </Card>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={isEditModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Profile & Targets</Text>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              <Text style={styles.inputLabel}>Athlete Name</Text>
+              <TextInput
+                style={styles.textInput}
+                value={editForm.name}
+                onChangeText={(text) => setEditForm({ ...editForm, name: text })}
+                placeholder="Your Name"
+                placeholderTextColor={Palette.textMuted}
+              />
+
+              <View style={styles.formRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Height (cm)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={editForm.height_cm}
+                    onChangeText={(text) => setEditForm({ ...editForm, height_cm: text })}
+                    keyboardType="numeric"
+                    placeholder="175"
+                    placeholderTextColor={Palette.textMuted}
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.inputLabel}>Goal Weight (kg)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={editForm.target_weight_kg}
+                    onChangeText={(text) => setEditForm({ ...editForm, target_weight_kg: text })}
+                    keyboardType="numeric"
+                    placeholder="75"
+                    placeholderTextColor={Palette.textMuted}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Daily Calories (kcal)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={editForm.calorie_target}
+                    onChangeText={(text) => setEditForm({ ...editForm, calorie_target: text })}
+                    keyboardType="numeric"
+                    placeholder="2400"
+                    placeholderTextColor={Palette.textMuted}
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.inputLabel}>Protein (g)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={editForm.protein_target}
+                    onChangeText={(text) => setEditForm({ ...editForm, protein_target: text })}
+                    keyboardType="numeric"
+                    placeholder="150"
+                    placeholderTextColor={Palette.textMuted}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Carbs (g)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={editForm.carb_target}
+                    onChangeText={(text) => setEditForm({ ...editForm, carb_target: text })}
+                    keyboardType="numeric"
+                    placeholder="260"
+                    placeholderTextColor={Palette.textMuted}
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.inputLabel}>Fat (g)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={editForm.fat_target}
+                    onChangeText={(text) => setEditForm({ ...editForm, fat_target: text })}
+                    keyboardType="numeric"
+                    placeholder="65"
+                    placeholderTextColor={Palette.textMuted}
+                  />
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalBtnRow}>
+              <Button
+                title="Cancel"
+                variant="ghost"
+                onPress={() => setIsEditModalVisible(false)}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Save Changes"
+                variant="primary"
+                onPress={handleSaveProfile}
+                style={{ flex: 1, marginLeft: 10 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -233,5 +400,50 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Palette.border,
     marginVertical: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Palette.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: Palette.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Palette.text,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Palette.textSecondary,
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  textInput: {
+    backgroundColor: Palette.cardElevated,
+    borderWidth: 1,
+    borderColor: Palette.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: Palette.text,
+    fontSize: 15,
+  },
+  formRow: {
+    flexDirection: 'row',
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    marginTop: 18,
+    marginBottom: 10,
   },
 });
