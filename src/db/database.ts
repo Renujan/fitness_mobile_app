@@ -53,6 +53,7 @@ export async function resetDatabase(): Promise<void> {
     DROP TABLE IF EXISTS workout_sets;
     DROP TABLE IF EXISTS workout_sessions;
     DROP TABLE IF EXISTS workout_plans;
+    DROP TABLE IF EXISTS water_logs;
     DROP TABLE IF EXISTS exercises;
     DROP TABLE IF EXISTS user_profile;
   `);
