@@ -13,7 +13,8 @@ import { BodyRepo } from '@/src/db/repositories/bodyRepo';
 import { UserRepo } from '@/src/db/repositories/userRepo';
 import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
 import { Exercise, BodyMeasurement, FitnessGoal } from '@/src/types/database';
-import { TrendingUp, Award, Activity, Scale, ChevronRight, Target, Plus, Check } from 'lucide-react-native';
+import { estimate1RM } from '@/src/utils/fitnessCalculators';
+import { TrendingUp, Award, Activity, Scale, ChevronRight, Target, Plus, Check, Flame } from 'lucide-react-native';
 
 export default function ProgressScreen() {
   const { isReady } = useDatabase();
@@ -324,17 +325,42 @@ export default function ProgressScreen() {
               <ActivityIndicator color={Palette.primary} style={{ marginVertical: 30 }} />
             ) : (
               <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
-                {/* PR Banner */}
-                <Card accent="primary" style={{ padding: 14, marginBottom: 14 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: Palette.primary }}>
-                    PERSONAL RECORD (MAX WEIGHT)
-                  </Text>
-                  <Text style={{ fontSize: 24, fontWeight: '800', color: Palette.text, marginTop: 4 }}>
-                    {exerciseHistory.length > 0
-                      ? `${Math.max(...exerciseHistory.map((h) => h.max_weight))} kg`
-                      : 'No logged sets yet'}
-                  </Text>
-                </Card>
+                {/* PR & Estimated 1RM Cards Grid */}
+                {(() => {
+                  const allSets = exerciseHistory.flatMap((h) => h.sets || []);
+                  const best1RM = allSets.reduce((max, s) => {
+                    const est = estimate1RM(s.weight_kg, s.reps).average;
+                    return est > max ? est : max;
+                  }, 0);
+                  const maxWeight = exerciseHistory.length > 0
+                    ? Math.max(...exerciseHistory.map((h) => h.max_weight))
+                    : 0;
+
+                  return (
+                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+                      <Card accent="primary" style={{ flex: 1, padding: 12, marginBottom: 0 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: Palette.primary, letterSpacing: 0.5 }}>
+                          MAX WEIGHT PR
+                        </Text>
+                        <Text style={{ fontSize: 22, fontWeight: '800', color: Palette.text, marginTop: 4 }}>
+                          {maxWeight > 0 ? `${maxWeight} kg` : '--'}
+                        </Text>
+                      </Card>
+
+                      <Card accent="secondary" style={{ flex: 1, padding: 12, marginBottom: 0 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Flame size={12} color={Palette.secondary} />
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: Palette.secondary, letterSpacing: 0.5 }}>
+                            ESTIMATED 1RM
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 22, fontWeight: '800', color: Palette.text, marginTop: 4 }}>
+                          {best1RM > 0 ? `${best1RM} kg` : '--'}
+                        </Text>
+                      </Card>
+                    </View>
+                  );
+                })()}
 
                 <Text style={[styles.sectionTitle, { fontSize: 14, marginBottom: 8 }]}>
                   History & Session Logs
