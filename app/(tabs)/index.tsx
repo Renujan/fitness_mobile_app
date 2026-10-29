@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { ScreenContainer } from '@/src/components/common/ScreenContainer';
 import { Header } from '@/src/components/common/Header';
@@ -7,13 +7,22 @@ import { Card } from '@/src/components/common/Card';
 import { Button } from '@/src/components/common/Button';
 import { Badge } from '@/src/components/common/Badge';
 import { ProgressBar } from '@/src/components/common/ProgressBar';
+import { QuickCalcModal } from '@/src/components/common/QuickCalcModal';
 import { Palette } from '@/constants/Colors';
 import { useDatabase } from '@/src/hooks/useDatabase';
 import { UserRepo } from '@/src/db/repositories/userRepo';
 import { WorkoutRepo } from '@/src/db/repositories/workoutRepo';
 import { NutritionRepo } from '@/src/db/repositories/nutritionRepo';
 import { UserProfile, WorkoutPlan } from '@/src/types/database';
-import { Dumbbell, PlusCircle, Flame, Calendar, Trophy } from 'lucide-react-native';
+import { Dumbbell, PlusCircle, Flame, Calendar, Trophy, Sparkles, Scale, Utensils, Calculator } from 'lucide-react-native';
+
+const MOTIVATIONAL_QUOTES = [
+  { quote: 'The only bad workout is the one that didn’t happen.', author: 'Fitness Wisdom' },
+  { quote: 'Discipline is choosing between what you want now and what you want most.', author: 'Abraham Lincoln' },
+  { quote: 'Small daily improvements over time lead to stunning results.', author: 'Robin Sharma' },
+  { quote: 'Strength does not come from winning. Your struggles develop your strengths.', author: 'Arnold Schwarzenegger' },
+  { quote: 'Action produces motivation, not the other way around.', author: 'Mindset' },
+];
 
 export default function HomeScreen() {
   const { isReady } = useDatabase();
@@ -21,6 +30,9 @@ export default function HomeScreen() {
   const [todayPlan, setTodayPlan] = useState<WorkoutPlan | null>(null);
   const [dailyMacros, setDailyMacros] = useState({ calories: 0, protein: 0 });
   const [weeklyConsistency, setWeeklyConsistency] = useState(0);
+  const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
+
+  const quoteOfTheDay = MOTIVATIONAL_QUOTES[new Date().getDate() % MOTIVATIONAL_QUOTES.length];
 
   const todayStr = new Date().toISOString().split('T')[0];
   const dayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay(); // 1=Mon...7=Sun
@@ -77,6 +89,49 @@ export default function HomeScreen() {
           </View>
         }
       />
+
+      {/* Quick Action Shortcuts */}
+      <View style={styles.shortcutsRow}>
+        <TouchableOpacity
+          style={styles.shortcutBtn}
+          onPress={() => router.push('/workout')}
+        >
+          <View style={[styles.shortcutIcon, { backgroundColor: Palette.primaryGlow }]}>
+            <Dumbbell size={18} color={Palette.primary} />
+          </View>
+          <Text style={styles.shortcutText}>Log Lift</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.shortcutBtn}
+          onPress={() => router.push('/nutrition')}
+        >
+          <View style={[styles.shortcutIcon, { backgroundColor: Palette.secondaryGlow }]}>
+            <Utensils size={18} color={Palette.secondary} />
+          </View>
+          <Text style={styles.shortcutText}>Log Meal</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.shortcutBtn}
+          onPress={() => router.push('/progress')}
+        >
+          <View style={[styles.shortcutIcon, { backgroundColor: 'rgba(255, 184, 76, 0.15)' }]}>
+            <Scale size={18} color="#FFB84C" />
+          </View>
+          <Text style={styles.shortcutText}>Weigh In</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.shortcutBtn}
+          onPress={() => setIsCalcModalOpen(true)}
+        >
+          <View style={[styles.shortcutIcon, { backgroundColor: 'rgba(184, 255, 101, 0.15)' }]}>
+            <Calculator size={18} color={Palette.primary} />
+          </View>
+          <Text style={styles.shortcutText}>Calc</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Today's Workout Card */}
       <Card accent="primary" elevated style={styles.workoutCard}>
@@ -160,6 +215,23 @@ export default function HomeScreen() {
           <Text style={styles.statSub}>This week</Text>
         </Card>
       </View>
+
+      {/* Daily Motivation Card */}
+      <Card style={styles.quoteCard}>
+        <View style={styles.quoteHeaderRow}>
+          <Sparkles size={16} color={Palette.primary} />
+          <Text style={styles.quoteCategory}>DAILY INSPIRATION</Text>
+        </View>
+        <Text style={styles.quoteText}>"{quoteOfTheDay.quote}"</Text>
+        <Text style={styles.quoteAuthor}>— {quoteOfTheDay.author}</Text>
+      </Card>
+
+      {/* Gym Plate & 1RM Calculator Modal */}
+      <QuickCalcModal
+        visible={isCalcModalOpen}
+        onClose={() => setIsCalcModalOpen(false)}
+        defaultWeight={profile?.current_weight_kg ? Math.round(profile.current_weight_kg * 1.2) : 80}
+      />
     </ScreenContainer>
   );
 }
@@ -271,5 +343,65 @@ const styles = StyleSheet.create({
   statSub: {
     fontSize: 12,
     color: Palette.textMuted,
+  },
+  shortcutsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 8,
+  },
+  shortcutBtn: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: Palette.card,
+    borderRadius: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: Palette.border,
+  },
+  shortcutIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  shortcutText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Palette.text,
+  },
+  quoteCard: {
+    marginTop: 4,
+    marginBottom: 20,
+    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: Palette.primary,
+  },
+  quoteHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  quoteCategory: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Palette.primary,
+    letterSpacing: 1,
+  },
+  quoteText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: Palette.text,
+    lineHeight: 20,
+  },
+  quoteAuthor: {
+    fontSize: 12,
+    color: Palette.textSecondary,
+    fontWeight: '600',
+    marginTop: 6,
+    textAlign: 'right',
   },
 });
