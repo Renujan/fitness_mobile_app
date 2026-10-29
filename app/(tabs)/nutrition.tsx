@@ -10,8 +10,9 @@ import { Palette } from '@/constants/Colors';
 import { useDatabase } from '@/src/hooks/useDatabase';
 import { NutritionRepo, DailyMacroSummary } from '@/src/db/repositories/nutritionRepo';
 import { UserRepo } from '@/src/db/repositories/userRepo';
-import { UserProfile, MealType, FoodItem } from '@/src/types/database';
-import { Utensils, Plus, Apple, Trash2, Search } from 'lucide-react-native';
+import { WaterRepo } from '@/src/db/repositories/waterRepo';
+import { UserProfile, MealType, FoodItem, WaterLog } from '@/src/types/database';
+import { Utensils, Plus, Apple, Trash2, Search, Droplets, RotateCcw } from 'lucide-react-native';
 
 export default function NutritionScreen() {
   const { isReady } = useDatabase();
@@ -24,6 +25,15 @@ export default function NutritionScreen() {
     logs: [],
   });
   const [loading, setLoading] = useState(true);
+
+  // Hydration Tracker State
+  const [waterLog, setWaterLog] = useState<WaterLog>({
+    id: 0,
+    date: new Date().toISOString().split('T')[0],
+    amount_ml: 0,
+    target_ml: 2500,
+    updated_at: '',
+  });
 
   // Food Logger Modal States
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -45,16 +55,36 @@ export default function NutritionScreen() {
   const loadNutrition = async () => {
     try {
       setLoading(true);
-      const [u, s] = await Promise.all([
+      const [u, s, w] = await Promise.all([
         UserRepo.getProfile(),
         NutritionRepo.getDailyLogs(todayStr),
+        WaterRepo.getWaterLog(todayStr),
       ]);
       setProfile(u);
       setSummary(s);
+      setWaterLog(w);
     } catch (e) {
       console.error('Error loading nutrition:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddWater = async (amount: number) => {
+    try {
+      const updated = await WaterRepo.addWater(todayStr, amount);
+      setWaterLog(updated);
+    } catch (e) {
+      console.error('Error logging water:', e);
+    }
+  };
+
+  const handleResetWater = async () => {
+    try {
+      await WaterRepo.resetWater(todayStr);
+      setWaterLog((prev) => ({ ...prev, amount_ml: 0 }));
+    } catch (e) {
+      console.error('Error resetting water:', e);
     }
   };
 
@@ -209,6 +239,49 @@ export default function NutritionScreen() {
           unit="g"
           color="#FF758F"
         />
+      </Card>
+
+      {/* Daily Hydration Card */}
+      <Card style={styles.waterCard}>
+        <View style={styles.waterHeaderRow}>
+          <View style={styles.waterTitleGroup}>
+            <View style={styles.waterIconCircle}>
+              <Droplets size={18} color={Palette.secondary} />
+            </View>
+            <View>
+              <Text style={styles.waterTitle}>Daily Hydration</Text>
+              <Text style={styles.waterSub}>
+                {waterLog.amount_ml} / {waterLog.target_ml} ml ({Math.min(100, Math.round((waterLog.amount_ml / waterLog.target_ml) * 100))}%)
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={handleResetWater} style={styles.resetWaterBtn}>
+            <RotateCcw size={16} color={Palette.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <ProgressBar
+          current={waterLog.amount_ml}
+          target={waterLog.target_ml}
+          unit="ml"
+          color={Palette.secondary}
+          showLabels={false}
+        />
+
+        <View style={styles.waterActionRow}>
+          <TouchableOpacity
+            style={styles.waterActionBtn}
+            onPress={() => handleAddWater(250)}
+          >
+            <Text style={styles.waterActionBtnText}>+250 ml (Glass)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.waterActionBtn}
+            onPress={() => handleAddWater(500)}
+          >
+            <Text style={styles.waterActionBtnText}>+500 ml (Bottle)</Text>
+          </TouchableOpacity>
+        </View>
       </Card>
 
       {/* Meals Grouping */}
@@ -601,5 +674,61 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 18,
     marginBottom: 10,
+  },
+  waterCard: {
+    padding: 16,
+    marginBottom: 16,
+  },
+  waterHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  waterTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  waterIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Palette.secondaryGlow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waterTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Palette.text,
+  },
+  waterSub: {
+    fontSize: 12,
+    color: Palette.secondary,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  resetWaterBtn: {
+    padding: 6,
+  },
+  waterActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  waterActionBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    backgroundColor: Palette.cardElevated,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Palette.border,
+  },
+  waterActionBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Palette.text,
   },
 });
