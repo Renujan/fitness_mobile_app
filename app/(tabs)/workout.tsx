@@ -9,7 +9,8 @@ import { Palette } from '@/constants/Colors';
 import { useDatabase } from '@/src/hooks/useDatabase';
 import { WorkoutRepo } from '@/src/db/repositories/workoutRepo';
 import { WorkoutSession, Exercise, WorkoutSet } from '@/src/types/database';
-import { Dumbbell, Plus, History, Calendar, CheckCircle, Trash2, X } from 'lucide-react-native';
+import { RestTimer } from '@/src/components/common/RestTimer';
+import { Dumbbell, Plus, History, Calendar, CheckCircle, Trash2, X, Timer } from 'lucide-react-native';
 
 export default function WorkoutScreen() {
   const { isReady } = useDatabase();
@@ -18,6 +19,7 @@ export default function WorkoutScreen() {
 
   // Active Workout Session States
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
+  const [isRestTimerOpen, setIsRestTimerOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [sessionTitle, setSessionTitle] = useState('Strength Workout');
   const [sessionStartTime, setSessionStartTime] = useState<number>(Date.now());
@@ -80,6 +82,7 @@ export default function WorkoutScreen() {
       await WorkoutRepo.addSet(activeSessionId, selectedExerciseId, weight, reps, rpe);
       const sets = await WorkoutRepo.getSetsForSession(activeSessionId);
       setCurrentSets(sets);
+      setIsRestTimerOpen(true);
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Could not log set');
     }
@@ -240,9 +243,17 @@ export default function WorkoutScreen() {
                   {currentSets.length} sets logged • Live Session
                 </Text>
               </View>
-              <TouchableOpacity onPress={handleDiscardWorkout} style={styles.closeBtn}>
-                <X size={20} color={Palette.textSecondary} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <TouchableOpacity
+                  onPress={() => setIsRestTimerOpen(true)}
+                  style={styles.headerTimerBtn}
+                >
+                  <Timer size={18} color={Palette.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleDiscardWorkout} style={styles.closeBtn}>
+                  <X size={20} color={Palette.textSecondary} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
@@ -357,6 +368,12 @@ export default function WorkoutScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Floating Rest Interval Timer */}
+      <RestTimer
+        visible={isRestTimerOpen}
+        onClose={() => setIsRestTimerOpen(false)}
+      />
     </ScreenContainer>
   );
 }
@@ -557,5 +574,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 18,
     marginBottom: 10,
+  },
+  headerTimerBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: Palette.primaryGlow,
   },
 });
