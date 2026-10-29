@@ -10,7 +10,8 @@ import { useDatabase } from '@/src/hooks/useDatabase';
 import { WorkoutRepo } from '@/src/db/repositories/workoutRepo';
 import { WorkoutSession, Exercise, WorkoutSet } from '@/src/types/database';
 import { RestTimer } from '@/src/components/common/RestTimer';
-import { Dumbbell, Plus, History, Calendar, CheckCircle, Trash2, X, Timer } from 'lucide-react-native';
+import { QuickCalcModal } from '@/src/components/common/QuickCalcModal';
+import { Dumbbell, Plus, History, Calendar, CheckCircle, Trash2, X, Timer, Calculator } from 'lucide-react-native';
 
 export default function WorkoutScreen() {
   const { isReady } = useDatabase();
@@ -20,6 +21,7 @@ export default function WorkoutScreen() {
   // Active Workout Session States
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isRestTimerOpen, setIsRestTimerOpen] = useState(false);
+  const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [sessionTitle, setSessionTitle] = useState('Strength Workout');
   const [sessionStartTime, setSessionStartTime] = useState<number>(Date.now());
@@ -243,7 +245,13 @@ export default function WorkoutScreen() {
                   {currentSets.length} sets logged • Live Session
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <TouchableOpacity
+                  onPress={() => setIsCalcModalOpen(true)}
+                  style={styles.headerTimerBtn}
+                >
+                  <Calculator size={18} color={Palette.secondary} />
+                </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setIsRestTimerOpen(true)}
                   style={styles.headerTimerBtn}
@@ -373,6 +381,13 @@ export default function WorkoutScreen() {
       <RestTimer
         visible={isRestTimerOpen}
         onClose={() => setIsRestTimerOpen(false)}
+      />
+
+      {/* Barbell Plate & 1RM Calculator Modal */}
+      <QuickCalcModal
+        visible={isCalcModalOpen}
+        onClose={() => setIsCalcModalOpen(false)}
+        defaultWeight={parseFloat(setForm.weight) || 60}
       />
     </ScreenContainer>
   );
