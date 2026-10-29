@@ -89,6 +89,14 @@ export interface FoodLog {
   logged_at: string;
 }
 
+export interface WaterLog {
+  id: number;
+  date: string; // YYYY-MM-DD
+  amount_ml: number;
+  target_ml: number;
+  updated_at: string;
+}
+
 export interface BodyMeasurement {
   id: number;
   date: string; // YYYY-MM-DD

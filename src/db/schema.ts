@@ -134,6 +134,15 @@ CREATE TABLE IF NOT EXISTS achievements (
   unlocked_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS water_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  amount_ml INTEGER NOT NULL DEFAULT 0,
+  target_ml INTEGER NOT NULL DEFAULT 2500,
+  updated_at TEXT NOT NULL,
+  UNIQUE(date)
+);
+
 -- Indexing for fast query performance
 CREATE INDEX IF NOT EXISTS idx_sessions_date ON workout_sessions(date);
 CREATE INDEX IF NOT EXISTS idx_sets_session ON workout_sets(session_id);
@@ -142,4 +151,5 @@ CREATE INDEX IF NOT EXISTS idx_food_logs_date ON food_logs(date);
 CREATE INDEX IF NOT EXISTS idx_food_logs_meal ON food_logs(meal_type);
 CREATE INDEX IF NOT EXISTS idx_body_date ON body_measurements(date);
 CREATE INDEX IF NOT EXISTS idx_photos_date ON progress_photos(date);
+CREATE INDEX IF NOT EXISTS idx_water_date ON water_logs(date);
 `;
