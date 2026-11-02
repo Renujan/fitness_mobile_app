@@ -11,6 +11,7 @@ import { WorkoutRepo } from '@/src/db/repositories/workoutRepo';
 import { WorkoutSession, Exercise, WorkoutSet } from '@/src/types/database';
 import { RestTimer } from '@/src/components/common/RestTimer';
 import { QuickCalcModal } from '@/src/components/common/QuickCalcModal';
+import { formatRelativeDate, formatDuration } from '@/src/utils/date';
 import { Dumbbell, Plus, History, Calendar, CheckCircle, Trash2, X, Timer, Calculator } from 'lucide-react-native';
 
 export default function WorkoutScreen() {
@@ -218,11 +219,11 @@ export default function WorkoutScreen() {
             <View style={styles.historyMeta}>
               <View style={styles.metaItem}>
                 <Calendar size={14} color={Palette.textSecondary} />
-                <Text style={styles.metaText}>{item.date}</Text>
+                <Text style={styles.metaText}>{formatRelativeDate(item.date)}</Text>
               </View>
               <View style={styles.metaItem}>
                 <CheckCircle size={14} color={Palette.primary} />
-                <Text style={styles.metaText}>{Math.round(item.duration_seconds / 60)} mins</Text>
+                <Text style={styles.metaText}>{formatDuration(item.duration_seconds)}</Text>
               </View>
             </View>
           </Card>
