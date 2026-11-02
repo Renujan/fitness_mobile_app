@@ -153,4 +153,5 @@ export interface BackupData {
   progress_photos: ProgressPhoto[];
   fitness_goals: FitnessGoal[];
   achievements: Achievement[];
+  water_logs?: WaterLog[];
 }

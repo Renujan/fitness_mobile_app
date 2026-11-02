@@ -20,6 +20,7 @@ export class BackupRepo {
       progress_photos,
       fitness_goals,
       achievements,
+      water_logs,
     ] = await Promise.all([
       db.getFirstAsync<any>('SELECT * FROM user_profile WHERE id = 1'),
       db.getAllAsync<any>('SELECT * FROM exercises'),
@@ -32,6 +33,7 @@ export class BackupRepo {
       db.getAllAsync<any>('SELECT * FROM progress_photos'),
       db.getAllAsync<any>('SELECT * FROM fitness_goals'),
       db.getAllAsync<any>('SELECT * FROM achievements'),
+      db.getAllAsync<any>('SELECT * FROM water_logs'),
     ]);
 
     return {
@@ -48,6 +50,7 @@ export class BackupRepo {
       progress_photos,
       fitness_goals,
       achievements,
+      water_logs,
     };
   }
 
@@ -207,6 +210,15 @@ export class BackupRepo {
           `INSERT OR REPLACE INTO achievements (id, code, title, description, icon, unlocked_at)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [ach.id, ach.code, ach.title, ach.description, ach.icon, ach.unlocked_at || null]
+        );
+      }
+
+      // Restore water logs
+      for (const w of data.water_logs || []) {
+        await db.runAsync(
+          `INSERT OR REPLACE INTO water_logs (id, date, amount_ml, target_ml, updated_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          [w.id, w.date, w.amount_ml, w.target_ml, w.updated_at]
         );
       }
 
