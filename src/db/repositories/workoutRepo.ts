@@ -83,6 +83,9 @@ export class WorkoutRepo {
     const db = await getDatabase();
     const endTime = new Date().toISOString();
 
+    // Ensure all sets in session are marked completed
+    await db.runAsync('UPDATE workout_sets SET is_completed = 1 WHERE session_id = ?', [sessionId]);
+
     // Calculate total volume for completed sets
     const sets = await this.getSetsForSession(sessionId);
     const totalVolume = sets
@@ -159,7 +162,7 @@ export class WorkoutRepo {
     const result = await db.runAsync(
       `INSERT INTO workout_sets (
         session_id, exercise_id, set_number, weight_kg, reps, rpe, is_completed, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 0, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
       [sessionId, exerciseId, nextSet, weightKg, reps, rpe ?? null, now]
     );
     return result.lastInsertRowId;
