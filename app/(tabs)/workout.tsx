@@ -32,6 +32,48 @@ export default function WorkoutScreen() {
   const [currentSets, setCurrentSets] = useState<WorkoutSet[]>([]);
   const [setForm, setSetForm] = useState({ weight: '60', reps: '10', rpe: '8' });
 
+  // Historical Session Inspection Modal States
+  const [selectedHistorySession, setSelectedHistorySession] = useState<(WorkoutSession & { sets: WorkoutSet[] }) | null>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [loadingHistoryDetail, setLoadingHistoryDetail] = useState(false);
+
+  const handleOpenSessionDetail = async (session: WorkoutSession) => {
+    setIsHistoryModalOpen(true);
+    setLoadingHistoryDetail(true);
+    try {
+      const detailed = await WorkoutRepo.getSessionById(session.id);
+      setSelectedHistorySession(detailed);
+    } catch (e) {
+      console.error('Error fetching session detail:', e);
+    } finally {
+      setLoadingHistoryDetail(false);
+    }
+  };
+
+  const handleDeleteHistoricalSession = (sessionId: number) => {
+    Alert.alert(
+      'Delete Workout',
+      'Are you sure you want to delete this recorded workout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await WorkoutRepo.deleteSession(sessionId);
+              setIsHistoryModalOpen(false);
+              setSelectedHistorySession(null);
+              await loadSessions();
+            } catch (e: any) {
+              Alert.alert('Error', e?.message || 'Could not delete session');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const loadSessions = async () => {
     try {
       setLoading(true);
@@ -223,7 +265,11 @@ export default function WorkoutScreen() {
         />
       ) : (
         history.map((item) => (
-          <Card key={item.id} style={styles.historyCard}>
+          <Card
+            key={item.id}
+            style={styles.historyCard}
+            onPress={() => handleOpenSessionDetail(item)}
+          >
             <View style={styles.historyTop}>
               <Text style={styles.historyTitle}>{item.title}</Text>
               <Badge label={`${item.total_volume_kg} kg vol`} variant="secondary" />
@@ -390,6 +436,95 @@ export default function WorkoutScreen() {
                 title="Finish Workout"
                 variant="primary"
                 onPress={handleFinishWorkout}
+                style={{ flex: 1.5, marginLeft: 10 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Historical Session Detail Modal */}
+      <Modal
+        visible={isHistoryModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsHistoryModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeaderRow}>
+              <View>
+                <Text style={styles.modalTitle}>
+                  {selectedHistorySession?.title || 'Workout Details'}
+                </Text>
+                <Text style={styles.sessionSub}>
+                  {selectedHistorySession?.date ? formatRelativeDate(selectedHistorySession.date) : ''} • {selectedHistorySession?.duration_seconds ? formatDuration(selectedHistorySession.duration_seconds) : ''}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsHistoryModalOpen(false)} style={styles.closeBtn}>
+                <X size={20} color={Palette.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {loadingHistoryDetail ? (
+              <ActivityIndicator color={Palette.primary} style={{ marginVertical: 30 }} />
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
+                <View style={{ flexDirection: 'row', gap: 10, marginVertical: 12 }}>
+                  <Card accent="primary" style={{ flex: 1, padding: 12, marginBottom: 0 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: Palette.primary, letterSpacing: 0.5 }}>
+                      TOTAL VOLUME
+                    </Text>
+                    <Text style={{ fontSize: 20, fontWeight: '800', color: Palette.text, marginTop: 4 }}>
+                      {selectedHistorySession?.total_volume_kg || 0} kg
+                    </Text>
+                  </Card>
+                  <Card accent="secondary" style={{ flex: 1, padding: 12, marginBottom: 0 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: Palette.secondary, letterSpacing: 0.5 }}>
+                      SETS LOGGED
+                    </Text>
+                    <Text style={{ fontSize: 20, fontWeight: '800', color: Palette.text, marginTop: 4 }}>
+                      {selectedHistorySession?.sets?.length || 0}
+                    </Text>
+                  </Card>
+                </View>
+
+                <Text style={[styles.sectionTitle, { fontSize: 14, marginTop: 14, marginBottom: 8 }]}>
+                  Recorded Sets
+                </Text>
+
+                {(!selectedHistorySession?.sets || selectedHistorySession.sets.length === 0) ? (
+                  <Text style={{ color: Palette.textMuted, fontStyle: 'italic', paddingVertical: 12 }}>
+                    No sets recorded in this session.
+                  </Text>
+                ) : (
+                  selectedHistorySession.sets.map((s, idx) => (
+                    <View key={s.id || idx} style={styles.setRow}>
+                      <Text style={styles.setNum}>#{idx + 1}</Text>
+                      <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={styles.setExerciseText}>{s.exercise_name || 'Exercise'}</Text>
+                        <Text style={styles.setDetailText}>
+                          {s.weight_kg} kg × {s.reps} reps {s.rpe ? `(RPE ${s.rpe})` : ''}
+                        </Text>
+                      </View>
+                      <Badge label={`${s.weight_kg * s.reps} kg`} variant="secondary" />
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            )}
+
+            <View style={styles.modalBtnRow}>
+              <Button
+                title="Delete"
+                variant="danger"
+                onPress={() => selectedHistorySession && handleDeleteHistoricalSession(selectedHistorySession.id)}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Close"
+                variant="outline"
+                onPress={() => setIsHistoryModalOpen(false)}
                 style={{ flex: 1.5, marginLeft: 10 }}
               />
             </View>
