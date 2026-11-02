@@ -6,6 +6,7 @@ import { Card } from '@/src/components/common/Card';
 import { Button } from '@/src/components/common/Button';
 import { Badge } from '@/src/components/common/Badge';
 import { ProgressBar } from '@/src/components/common/ProgressBar';
+import { EmptyState } from '@/src/components/common/EmptyState';
 import { Palette } from '@/constants/Colors';
 import { useDatabase } from '@/src/hooks/useDatabase';
 import { WorkoutRepo } from '@/src/db/repositories/workoutRepo';
@@ -172,11 +173,13 @@ export default function ProgressScreen() {
       </View>
 
       {goals.length === 0 ? (
-        <Card style={styles.emptyGoalCard}>
-          <Text style={{ color: Palette.textMuted, fontStyle: 'italic', fontSize: 13, textAlign: 'center' }}>
-            No goals set yet. Tap "+ Goal" to set a strength or physique milestone!
-          </Text>
-        </Card>
+        <EmptyState
+          icon={<Target size={28} color={Palette.primary} />}
+          title="No Fitness Goals Yet"
+          description="Set a strength PR target, bodyweight goal, or consistency milestone."
+          actionTitle="+ Set Milestone"
+          onAction={() => setIsAddGoalModalOpen(true)}
+        />
       ) : (
         goals.map((g) => (
           <Card key={g.id} style={{ padding: 14, marginBottom: 10 }}>
