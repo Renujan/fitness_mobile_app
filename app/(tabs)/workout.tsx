@@ -92,6 +92,17 @@ export default function WorkoutScreen() {
     }
   };
 
+  const handleDeleteSet = async (setId: number) => {
+    if (!activeSessionId) return;
+    try {
+      await WorkoutRepo.deleteSet(setId);
+      const sets = await WorkoutRepo.getSetsForSession(activeSessionId);
+      setCurrentSets(sets);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Could not delete set');
+    }
+  };
+
   const handleDiscardWorkout = () => {
     Alert.alert(
       'Discard Workout',
@@ -356,6 +367,13 @@ export default function WorkoutScreen() {
                       </Text>
                     </View>
                     <Badge label={`${s.weight_kg * s.reps} kg`} variant="secondary" />
+                    <TouchableOpacity
+                      onPress={() => handleDeleteSet(s.id)}
+                      style={styles.deleteSetBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Trash2 size={16} color={Palette.danger} />
+                    </TouchableOpacity>
                   </View>
                 ))
               )}
@@ -586,6 +604,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Palette.textSecondary,
     marginTop: 2,
+  },
+  deleteSetBtn: {
+    marginLeft: 10,
+    padding: 4,
   },
   modalBtnRow: {
     flexDirection: 'row',
