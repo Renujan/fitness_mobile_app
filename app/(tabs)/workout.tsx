@@ -5,6 +5,7 @@ import { Header } from '@/src/components/common/Header';
 import { Card } from '@/src/components/common/Card';
 import { Button } from '@/src/components/common/Button';
 import { Badge } from '@/src/components/common/Badge';
+import { EmptyState } from '@/src/components/common/EmptyState';
 import { Palette } from '@/constants/Colors';
 import { useDatabase } from '@/src/hooks/useDatabase';
 import { WorkoutRepo } from '@/src/db/repositories/workoutRepo';
@@ -202,13 +203,13 @@ export default function WorkoutScreen() {
       {loading ? (
         <ActivityIndicator color={Palette.primary} style={{ marginTop: 24 }} />
       ) : history.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Dumbbell size={36} color={Palette.textMuted} />
-          <Text style={styles.emptyTitle}>No Workouts Logged Yet</Text>
-          <Text style={styles.emptyDesc}>
-            Your completed workouts, training volume and sets will appear here.
-          </Text>
-        </Card>
+        <EmptyState
+          icon={<Dumbbell size={32} color={Palette.primary} />}
+          title="No Workouts Logged Yet"
+          description="Your completed workouts, training volume and sets will appear here."
+          actionTitle="Start First Workout"
+          onAction={() => startNewWorkout('Workout Session')}
+        />
       ) : (
         history.map((item) => (
           <Card key={item.id} style={styles.historyCard}>
