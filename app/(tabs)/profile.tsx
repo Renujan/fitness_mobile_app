@@ -12,6 +12,7 @@ import { BackupRepo } from '@/src/db/repositories/backupRepo';
 import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
 import { resetDatabase } from '@/src/db/database';
 import { UserProfile, Achievement } from '@/src/types/database';
+import { calculateBMI } from '@/src/utils/fitnessCalculators';
 import { User, Settings, ShieldCheck, Download, Upload, RotateCcw, Award, Trophy, Lock } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -151,6 +152,10 @@ export default function ProfileScreen() {
     }
   };
 
+  const bmiInfo = profile?.current_weight_kg && profile?.height_cm
+    ? calculateBMI(profile.current_weight_kg, profile.height_cm)
+    : null;
+
   return (
     <ScreenContainer scrollable>
       <Header subtitle="SETTINGS & ACCOUNT" title="Profile" />
@@ -166,6 +171,14 @@ export default function ProfileScreen() {
             <Text style={styles.userSub}>
               {profile?.height_cm} cm • {profile?.current_weight_kg} kg
             </Text>
+            {bmiInfo && (
+              <View style={styles.bmiBadgeRow}>
+                <Badge
+                  label={`BMI ${bmiInfo.bmi} • ${bmiInfo.classification}`}
+                  variant={bmiInfo.classification === 'Normal' ? 'primary' : 'secondary'}
+                />
+              </View>
+            )}
           </View>
           <Badge label="OFFLINE" variant="primary" />
         </View>
@@ -483,6 +496,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Palette.textSecondary,
     marginTop: 2,
+  },
+  bmiBadgeRow: {
+    marginTop: 6,
+    flexDirection: 'row',
   },
   macroTargetsGrid: {
     flexDirection: 'row',
