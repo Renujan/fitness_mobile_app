@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Alert, Share, Modal, TextInput, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Alert, Share, Modal, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { ScreenContainer } from '@/src/components/common/ScreenContainer';
 import { Header } from '@/src/components/common/Header';
 import { Card } from '@/src/components/common/Card';
@@ -12,7 +12,7 @@ import { BackupRepo } from '@/src/db/repositories/backupRepo';
 import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
 import { resetDatabase } from '@/src/db/database';
 import { UserProfile, Achievement } from '@/src/types/database';
-import { calculateBMI } from '@/src/utils/fitnessCalculators';
+import { calculateBMI, estimateMacros } from '@/src/utils/fitnessCalculators';
 import { User, Settings, ShieldCheck, Download, Upload, RotateCcw, Award, Trophy, Lock } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -104,6 +104,18 @@ export default function ProfileScreen() {
       });
       setIsEditModalVisible(true);
     }
+  };
+
+  const handleAutoEstimate = (goal: 'cut' | 'maintain' | 'bulk') => {
+    const weight = parseFloat(editForm.target_weight_kg) || profile?.current_weight_kg || 75;
+    const est = estimateMacros(weight, goal);
+    setEditForm((prev) => ({
+      ...prev,
+      calorie_target: String(est.calories),
+      protein_target: String(est.protein),
+      carb_target: String(est.carbs),
+      fat_target: String(est.fat),
+    }));
   };
 
   const handleSaveProfile = async () => {
@@ -353,6 +365,28 @@ export default function ProfileScreen() {
                     placeholderTextColor={Palette.textMuted}
                   />
                 </View>
+              </View>
+
+              <Text style={[styles.inputLabel, { marginTop: 14 }]}>Auto-Calculate Macro Targets</Text>
+              <View style={styles.estimatorRow}>
+                <TouchableOpacity
+                  style={styles.estimatorBtn}
+                  onPress={() => handleAutoEstimate('cut')}
+                >
+                  <Text style={styles.estimatorBtnText}>Cut (-400)</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.estimatorBtn}
+                  onPress={() => handleAutoEstimate('maintain')}
+                >
+                  <Text style={styles.estimatorBtnText}>Maintain</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.estimatorBtn}
+                  onPress={() => handleAutoEstimate('bulk')}
+                >
+                  <Text style={styles.estimatorBtnText}>Bulk (+350)</Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.formRow}>
@@ -626,5 +660,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 15,
+  },
+  estimatorRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  estimatorBtn: {
+    flex: 1,
+    backgroundColor: Palette.inputBg,
+    borderColor: Palette.border,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  estimatorBtnText: {
+    color: Palette.primary,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
