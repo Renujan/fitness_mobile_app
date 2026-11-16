@@ -262,6 +262,19 @@ export default function NutritionScreen() {
           unit="g"
           color="#FF758F"
         />
+
+        {(() => {
+          const totalMacroGrams = summary.protein + summary.carbs + summary.fat;
+          const pPct = totalMacroGrams > 0 ? Math.round((summary.protein / totalMacroGrams) * 100) : 0;
+          const cPct = totalMacroGrams > 0 ? Math.round((summary.carbs / totalMacroGrams) * 100) : 0;
+          const fPct = totalMacroGrams > 0 ? Math.round((summary.fat / totalMacroGrams) * 100) : 0;
+          return (
+            <View style={styles.macroRatioRow}>
+              <Text style={styles.macroRatioText}>Ratio: {pPct}% P • {cPct}% C • {fPct}% F</Text>
+              <Text style={styles.macroRatioSub}>{Math.round(totalMacroGrams)}g total macros</Text>
+            </View>
+          );
+        })()}
       </Card>
 
       {/* Daily Hydration Card */}
@@ -541,6 +554,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Palette.text,
     marginBottom: 12,
+  },
+  macroRatioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: Palette.border,
+  },
+  macroRatioText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Palette.primary,
+  },
+  macroRatioSub: {
+    fontSize: 11,
+    color: Palette.textSecondary,
   },
   mealCard: {
     padding: 16,
