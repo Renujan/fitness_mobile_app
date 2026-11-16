@@ -166,6 +166,25 @@ export default function NutritionScreen() {
         fat: parseFloat(foodForm.fat) || 0,
       });
 
+      // Save to custom food library if custom entry
+      if (mode === 'custom') {
+        try {
+          await NutritionRepo.createCustomFood({
+            name: foodForm.name.trim(),
+            brand: 'Custom',
+            serving_size: 100,
+            serving_unit: 'g',
+            calories: parseFloat(foodForm.calories) || 0,
+            protein: parseFloat(foodForm.protein) || 0,
+            carbs: parseFloat(foodForm.carbs) || 0,
+            fat: parseFloat(foodForm.fat) || 0,
+            is_favorite: 0,
+          });
+        } catch (saveErr) {
+          console.warn('Could not save to food library:', saveErr);
+        }
+      }
+
       if (profile?.protein_target) {
         const addedProtein = (parseFloat(foodForm.protein) || 0) * servings;
         if (summary.protein + addedProtein >= profile.protein_target) {
