@@ -11,6 +11,7 @@ import { useDatabase } from '@/src/hooks/useDatabase';
 import { NutritionRepo, DailyMacroSummary } from '@/src/db/repositories/nutritionRepo';
 import { UserRepo } from '@/src/db/repositories/userRepo';
 import { WaterRepo } from '@/src/db/repositories/waterRepo';
+import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
 import { UserProfile, MealType, FoodItem, WaterLog } from '@/src/types/database';
 import { Utensils, Plus, Apple, Trash2, Search, Droplets, RotateCcw } from 'lucide-react-native';
 
@@ -154,6 +155,18 @@ export default function NutritionScreen() {
         carbs: parseFloat(foodForm.carbs) || 0,
         fat: parseFloat(foodForm.fat) || 0,
       });
+
+      if (profile?.protein_target) {
+        const addedProtein = (parseFloat(foodForm.protein) || 0) * servings;
+        if (summary.protein + addedProtein >= profile.protein_target) {
+          try {
+            await GoalsRepo.unlockAchievement('PROTEIN_MASTER');
+          } catch (err) {
+            console.warn('Could not unlock protein achievement:', err);
+          }
+        }
+      }
+
       await loadNutrition();
       setIsLogModalOpen(false);
     } catch (err: any) {
