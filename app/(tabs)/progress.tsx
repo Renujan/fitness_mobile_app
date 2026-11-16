@@ -228,6 +228,19 @@ export default function ProgressScreen() {
             <Text style={styles.metricValue}>
               {latestMeasurement ? `${latestMeasurement.weight_kg} kg` : 'No record yet'}
             </Text>
+            {latestMeasurement && (latestMeasurement.waist_cm || latestMeasurement.chest_cm || latestMeasurement.body_fat_pct) ? (
+              <View style={styles.metricSubRow}>
+                {latestMeasurement.waist_cm ? (
+                  <Text style={styles.metricSubText}>Waist: {latestMeasurement.waist_cm}cm</Text>
+                ) : null}
+                {latestMeasurement.chest_cm ? (
+                  <Text style={styles.metricSubText}>Chest: {latestMeasurement.chest_cm}cm</Text>
+                ) : null}
+                {latestMeasurement.body_fat_pct ? (
+                  <Text style={styles.metricSubText}>Fat: {latestMeasurement.body_fat_pct}%</Text>
+                ) : null}
+              </View>
+            ) : null}
           </View>
           <Button
             title="+ Update"
@@ -631,6 +644,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Palette.text,
     marginTop: 2,
+  },
+  metricSubRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  metricSubText: {
+    fontSize: 11,
+    color: Palette.textSecondary,
+    fontWeight: '600',
   },
   sectionHeader: {
     marginBottom: 12,
