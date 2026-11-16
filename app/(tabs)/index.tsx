@@ -84,8 +84,8 @@ export default function HomeScreen() {
         subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
         title={`Welcome, ${profile?.name || 'Athlete'}`}
         rightAction={
-          <View style={styles.streakBadge}>
-            <Flame size={16} color={Palette.primary} />
+          <View style={[styles.streakBadge, weeklyConsistency >= 3 && { borderColor: Palette.primary }]}>
+            <Flame size={16} color={weeklyConsistency >= 3 ? Palette.primary : Palette.textMuted} />
             <Text style={styles.streakText}>{weeklyConsistency}d / 7d</Text>
           </View>
         }
@@ -223,7 +223,13 @@ export default function HomeScreen() {
         <Card style={styles.statCard}>
           <Text style={styles.statLabel}>CONSISTENCY</Text>
           <Text style={styles.statValue}>{weeklyConsistency} Days</Text>
-          <Text style={styles.statSub}>This week</Text>
+          <Text style={styles.statSub}>
+            {weeklyConsistency >= 5
+              ? '🔥 Elite Streak'
+              : weeklyConsistency >= 3
+              ? '⚡ On Track'
+              : 'Keep pushing!'}
+          </Text>
         </Card>
       </View>
 
