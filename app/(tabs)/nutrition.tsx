@@ -13,7 +13,7 @@ import { UserRepo } from '@/src/db/repositories/userRepo';
 import { WaterRepo } from '@/src/db/repositories/waterRepo';
 import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
 import { UserProfile, MealType, FoodItem, WaterLog } from '@/src/types/database';
-import { Utensils, Plus, Apple, Trash2, Search, Droplets, RotateCcw } from 'lucide-react-native';
+import { Utensils, Plus, Apple, Trash2, Search, Droplets, RotateCcw, Star } from 'lucide-react-native';
 
 export default function NutritionScreen() {
   const { isReady } = useDatabase();
@@ -136,6 +136,16 @@ export default function NutritionScreen() {
       servingCount: '1',
     });
     setMode('custom');
+  };
+
+  const handleToggleFavorite = async (item: FoodItem) => {
+    try {
+      await NutritionRepo.toggleFavoriteFood(item.id, !item.is_favorite);
+      const updated = await NutritionRepo.getFoodItems(searchQuery);
+      setFoodItems(updated);
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
   const handleSaveFoodLog = async () => {
@@ -402,6 +412,17 @@ export default function NutritionScreen() {
                       style={styles.foodSearchItem}
                       onPress={() => handleSelectFood(item)}
                     >
+                      <TouchableOpacity
+                        onPress={() => handleToggleFavorite(item)}
+                        style={{ padding: 6, marginRight: 6 }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Star
+                          size={18}
+                          color={item.is_favorite ? '#FFB84C' : Palette.textMuted}
+                          fill={item.is_favorite ? '#FFB84C' : 'none'}
+                        />
+                      </TouchableOpacity>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.foodItemName}>{item.name}</Text>
                         <Text style={styles.foodItemMacros}>
