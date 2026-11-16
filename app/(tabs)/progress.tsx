@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, Alert, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { ScreenContainer } from '@/src/components/common/ScreenContainer';
 import { Header } from '@/src/components/common/Header';
 import { Card } from '@/src/components/common/Card';
@@ -15,7 +15,7 @@ import { UserRepo } from '@/src/db/repositories/userRepo';
 import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
 import { Exercise, BodyMeasurement, FitnessGoal } from '@/src/types/database';
 import { estimate1RM } from '@/src/utils/fitnessCalculators';
-import { TrendingUp, Award, Activity, Scale, ChevronRight, Target, Plus, Check, Flame } from 'lucide-react-native';
+import { TrendingUp, Award, Activity, Scale, ChevronRight, Target, Plus, Check, Flame, Trash2, CheckCircle2 } from 'lucide-react-native';
 
 export default function ProgressScreen() {
   const { isReady } = useDatabase();
@@ -102,6 +102,37 @@ export default function ProgressScreen() {
     }
   };
 
+  const handleDeleteGoal = (goalId: number) => {
+    Alert.alert('Delete Goal', 'Are you sure you want to delete this fitness goal?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await GoalsRepo.deleteGoal(goalId);
+            const updated = await GoalsRepo.getGoals();
+            setGoals(updated);
+          } catch (e: any) {
+            Alert.alert('Error', e?.message || 'Could not delete goal');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleToggleGoalComplete = async (goal: FitnessGoal) => {
+    try {
+      const isNowCompleted = !goal.is_completed;
+      const newCurrent = isNowCompleted ? goal.target_value : Math.max(0, goal.target_value - 5);
+      await GoalsRepo.updateGoalProgress(goal.id, newCurrent, isNowCompleted);
+      const updated = await GoalsRepo.getGoals();
+      setGoals(updated);
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Could not update goal');
+    }
+  };
+
   useEffect(() => {
     if (isReady) {
       loadData();
@@ -184,11 +215,27 @@ export default function ProgressScreen() {
         goals.map((g) => (
           <Card key={g.id} style={{ padding: 14, marginBottom: 10 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: Palette.text }}>{g.title}</Text>
-              <Badge
-                label={g.is_completed ? 'COMPLETED' : `${g.target_value} ${g.unit}`}
-                variant={g.is_completed ? 'primary' : 'secondary'}
-              />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: Palette.text, flex: 1, marginRight: 8 }}>{g.title}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Badge
+                  label={g.is_completed ? 'COMPLETED' : `${g.target_value} ${g.unit}`}
+                  variant={g.is_completed ? 'primary' : 'secondary'}
+                />
+                <TouchableOpacity
+                  onPress={() => handleToggleGoalComplete(g)}
+                  style={{ padding: 2 }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <CheckCircle2 size={18} color={g.is_completed ? Palette.primary : Palette.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleDeleteGoal(g.id)}
+                  style={{ padding: 2 }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Trash2 size={16} color={Palette.danger} />
+                </TouchableOpacity>
+              </View>
             </View>
             <ProgressBar
               current={g.current_value}
