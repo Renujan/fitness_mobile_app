@@ -33,6 +33,36 @@ export default function WorkoutScreen() {
   const [currentSets, setCurrentSets] = useState<WorkoutSet[]>([]);
   const [setForm, setSetForm] = useState({ weight: '60', reps: '10', rpe: '8' });
 
+  // Custom Exercise Creator Modal State
+  const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
+  const [customExerciseForm, setCustomExerciseForm] = useState({
+    name: '',
+    target_muscle: 'Chest',
+    equipment: 'Barbell',
+  });
+
+  const handleCreateCustomExercise = async () => {
+    if (!customExerciseForm.name.trim()) {
+      Alert.alert('Required', 'Please enter an exercise name.');
+      return;
+    }
+    try {
+      const newId = await WorkoutRepo.createCustomExercise({
+        name: customExerciseForm.name.trim(),
+        category: 'Strength',
+        target_muscle: customExerciseForm.target_muscle.trim() || 'General',
+        equipment: customExerciseForm.equipment.trim() || 'Free Weight',
+      });
+      const allEx = await WorkoutRepo.getExercises();
+      setExercises(allEx);
+      setSelectedExerciseId(newId);
+      setIsAddExerciseModalOpen(false);
+      setCustomExerciseForm({ name: '', target_muscle: 'Chest', equipment: 'Barbell' });
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Could not add exercise');
+    }
+  };
+
   // Historical Session Inspection Modal States
   const [selectedHistorySession, setSelectedHistorySession] = useState<(WorkoutSession & { sets: WorkoutSet[] }) | null>(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -369,6 +399,12 @@ export default function WorkoutScreen() {
                     </Text>
                   </TouchableOpacity>
                 ))}
+                <TouchableOpacity
+                  style={[styles.exChip, { borderColor: Palette.primary, borderStyle: 'dashed' }]}
+                  onPress={() => setIsAddExerciseModalOpen(true)}
+                >
+                  <Text style={[styles.exChipText, { color: Palette.primary }]}>+ Custom</Text>
+                </TouchableOpacity>
               </ScrollView>
 
               {/* Set Inputs */}
@@ -548,6 +584,66 @@ export default function WorkoutScreen() {
                 title="Close"
                 variant="outline"
                 onPress={() => setIsHistoryModalOpen(false)}
+                style={{ flex: 1.5, marginLeft: 10 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Custom Exercise Creator Modal */}
+      <Modal
+        visible={isAddExerciseModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsAddExerciseModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Add Custom Exercise</Text>
+            <Text style={styles.inputLabel}>Exercise Name *</Text>
+            <TextInput
+              style={styles.textInput}
+              value={customExerciseForm.name}
+              onChangeText={(t) => setCustomExerciseForm({ ...customExerciseForm, name: t })}
+              placeholder="e.g. Incline Dumbbell Curl"
+              placeholderTextColor={Palette.textMuted}
+            />
+
+            <View style={styles.formRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Target Muscle</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={customExerciseForm.target_muscle}
+                  onChangeText={(t) => setCustomExerciseForm({ ...customExerciseForm, target_muscle: t })}
+                  placeholder="e.g. Biceps"
+                  placeholderTextColor={Palette.textMuted}
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.inputLabel}>Equipment</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={customExerciseForm.equipment}
+                  onChangeText={(t) => setCustomExerciseForm({ ...customExerciseForm, equipment: t })}
+                  placeholder="e.g. Dumbbell"
+                  placeholderTextColor={Palette.textMuted}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalBtnRow}>
+              <Button
+                title="Cancel"
+                variant="ghost"
+                onPress={() => setIsAddExerciseModalOpen(false)}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Save Exercise"
+                variant="primary"
+                onPress={handleCreateCustomExercise}
                 style={{ flex: 1.5, marginLeft: 10 }}
               />
             </View>
@@ -771,6 +867,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 18,
     marginBottom: 10,
+  },
+  formRow: {
+    flexDirection: 'row',
   },
   headerTimerBtn: {
     padding: 6,
