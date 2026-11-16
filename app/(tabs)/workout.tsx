@@ -30,6 +30,7 @@ export default function WorkoutScreen() {
   const [sessionStartTime, setSessionStartTime] = useState<number>(Date.now());
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null);
+  const [selectedExCategory, setSelectedExCategory] = useState<string>('All');
   const [currentSets, setCurrentSets] = useState<WorkoutSet[]>([]);
   const [setForm, setSetForm] = useState({ weight: '60', reps: '10', rpe: '8' });
 
@@ -379,8 +380,29 @@ export default function WorkoutScreen() {
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
               {/* Exercise Selector */}
               <Text style={styles.inputLabel}>Select Exercise</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catFilterRow}>
+                {['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms'].map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[styles.catFilterChip, selectedExCategory === cat && styles.activeCatFilterChip]}
+                    onPress={() => setSelectedExCategory(cat)}
+                  >
+                    <Text style={[styles.catFilterText, selectedExCategory === cat && styles.activeCatFilterText]}>
+                      {cat}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.exChipsRow}>
-                {exercises.map((ex) => (
+                {(selectedExCategory === 'All'
+                  ? exercises
+                  : exercises.filter(
+                      (ex) =>
+                        ex.target_muscle.toLowerCase().includes(selectedExCategory.toLowerCase()) ||
+                        ex.category.toLowerCase().includes(selectedExCategory.toLowerCase())
+                    )
+                ).map((ex) => (
                   <TouchableOpacity
                     key={ex.id}
                     style={[
@@ -789,6 +811,31 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     padding: 6,
+  },
+  catFilterRow: {
+    marginVertical: 4,
+  },
+  catFilterChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 6,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Palette.border,
+  },
+  activeCatFilterChip: {
+    backgroundColor: Palette.primaryGlow,
+    borderColor: Palette.primary,
+  },
+  catFilterText: {
+    fontSize: 11,
+    color: Palette.textSecondary,
+    fontWeight: '600',
+  },
+  activeCatFilterText: {
+    color: Palette.primary,
+    fontWeight: '700',
   },
   exChipsRow: {
     marginVertical: 8,
