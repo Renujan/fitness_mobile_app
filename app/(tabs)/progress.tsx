@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, Alert, ScrollView, TouchableOpacity, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from '@/src/components/common/ScreenContainer';
 import { Header } from '@/src/components/common/Header';
 import { Card } from '@/src/components/common/Card';
@@ -13,9 +14,9 @@ import { WorkoutRepo } from '@/src/db/repositories/workoutRepo';
 import { BodyRepo } from '@/src/db/repositories/bodyRepo';
 import { UserRepo } from '@/src/db/repositories/userRepo';
 import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
-import { Exercise, BodyMeasurement, FitnessGoal } from '@/src/types/database';
+import { Exercise, BodyMeasurement, FitnessGoal, ProgressPhoto } from '@/src/types/database';
 import { estimate1RM } from '@/src/utils/fitnessCalculators';
-import { TrendingUp, Award, Activity, Scale, ChevronRight, Target, Plus, Check, Flame, Trash2, CheckCircle2 } from 'lucide-react-native';
+import { TrendingUp, Award, Activity, Scale, ChevronRight, Target, Plus, Check, Flame, Trash2, CheckCircle2, Camera } from 'lucide-react-native';
 
 export default function ProgressScreen() {
   const { isReady } = useDatabase();
@@ -43,6 +44,9 @@ export default function ProgressScreen() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Photos State
+  const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
+
   const handleOpenExerciseDetail = async (exercise: Exercise) => {
     setSelectedExercise(exercise);
     setIsDetailModalOpen(true);
@@ -60,14 +64,16 @@ export default function ProgressScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [exs, bm, g] = await Promise.all([
+      const [exs, bm, g, phs] = await Promise.all([
         WorkoutRepo.getExercises(),
         BodyRepo.getLatestMeasurement(),
         GoalsRepo.getGoals(),
+        BodyRepo.getPhotos(),
       ]);
       setExercises(exs.slice(0, 8));
       setLatestMeasurement(bm);
       setGoals(g);
+      setPhotos(phs);
       if (bm) {
         setWeightInput(String(bm.weight_kg));
       }
@@ -76,6 +82,50 @@ export default function ProgressScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePickPhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 5],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const todayStr = new Date().toISOString().split('T')[0];
+        await BodyRepo.savePhoto(asset.uri, 'front', todayStr);
+        try {
+          await GoalsRepo.unlockAchievement('PHOTO_FIRST');
+        } catch {}
+        const updatedPhotos = await BodyRepo.getPhotos();
+        setPhotos(updatedPhotos);
+        Alert.alert('Saved', 'Progress photo saved successfully.');
+      }
+    } catch (e: any) {
+      Alert.alert('Photo Error', e?.message || 'Could not pick image');
+    }
+  };
+
+  const handleDeletePhoto = (photoId: number) => {
+    Alert.alert('Delete Photo', 'Remove this progress photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await BodyRepo.deletePhoto(photoId);
+            const updated = await BodyRepo.getPhotos();
+            setPhotos(updated);
+          } catch (e: any) {
+            Alert.alert('Error', e?.message || 'Could not delete photo');
+          }
+        },
+      },
+    ]);
   };
 
   const handleCreateGoal = async () => {
@@ -245,6 +295,46 @@ export default function ProgressScreen() {
             />
           </Card>
         ))
+      )}
+
+      {/* Transformation & Progress Photos */}
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.sectionTitleGroup}>
+          <Camera size={18} color={Palette.primary} />
+          <Text style={styles.sectionTitle}>Transformation Photos</Text>
+        </View>
+        <Button
+          title="+ Add Photo"
+          size="small"
+          variant="ghost"
+          textStyle={{ color: Palette.primary }}
+          onPress={handlePickPhoto}
+        />
+      </View>
+
+      {photos.length === 0 ? (
+        <Card style={styles.emptyGoalCard}>
+          <Text style={{ color: Palette.textMuted, fontStyle: 'italic', fontSize: 13, textAlign: 'center' }}>
+            No progress photos added yet. Tap "+ Add Photo" to record check-ins!
+          </Text>
+        </Card>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+          {photos.map((ph) => (
+            <View key={ph.id} style={styles.photoThumbWrapper}>
+              <Image source={{ uri: ph.photo_uri }} style={styles.photoThumb} />
+              <View style={styles.photoOverlay}>
+                <Text style={styles.photoDateText}>{ph.date}</Text>
+                <TouchableOpacity
+                  onPress={() => handleDeletePhoto(ph.id)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Trash2 size={14} color="#FF5C5C" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
       )}
 
       {/* Exercise Progression Directory */}
@@ -647,5 +737,36 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: Palette.border,
+  },
+  photoThumbWrapper: {
+    width: 110,
+    height: 140,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 10,
+    backgroundColor: Palette.cardElevated,
+    borderWidth: 1,
+    borderColor: Palette.border,
+  },
+  photoThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  photoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(11, 15, 20, 0.75)',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  photoDateText: {
+    fontSize: 10,
+    color: '#FFF',
+    fontWeight: '600',
   },
 });
