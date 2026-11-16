@@ -7,6 +7,7 @@ import { Card } from '@/src/components/common/Card';
 import { Button } from '@/src/components/common/Button';
 import { Badge } from '@/src/components/common/Badge';
 import { ProgressBar } from '@/src/components/common/ProgressBar';
+import { EmptyState } from '@/src/components/common/EmptyState';
 import { QuickCalcModal } from '@/src/components/common/QuickCalcModal';
 import { Palette } from '@/constants/Colors';
 import { useDatabase } from '@/src/hooks/useDatabase';
@@ -134,38 +135,48 @@ export default function HomeScreen() {
       </View>
 
       {/* Today's Workout Card */}
-      <Card accent="primary" elevated style={styles.workoutCard}>
-        <View style={styles.cardHeaderRow}>
-          <View style={styles.workoutIconCircle}>
-            <Dumbbell size={24} color={Palette.primary} />
+      {!todayPlan ? (
+        <EmptyState
+          icon={<Calendar size={28} color={Palette.primary} />}
+          title="No Workout Scheduled"
+          description="No planned routine for today. Take an active recovery rest or log an empty lift."
+          actionTitle="Start Custom Session"
+          onAction={() => router.push('/workout')}
+        />
+      ) : (
+        <Card accent="primary" elevated style={styles.workoutCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.workoutIconCircle}>
+              <Dumbbell size={24} color={Palette.primary} />
+            </View>
+            <View style={styles.workoutHeaderInfo}>
+              <Text style={styles.cardCategory}>TODAY'S WORKOUT</Text>
+              <Text style={styles.cardTitle}>{todayPlan.title}</Text>
+            </View>
+            <Badge
+              label={todayPlan.is_rest_day ? 'REST' : 'ACTIVE'}
+              variant={todayPlan.is_rest_day ? 'neutral' : 'primary'}
+            />
           </View>
-          <View style={styles.workoutHeaderInfo}>
-            <Text style={styles.cardCategory}>TODAY'S WORKOUT</Text>
-            <Text style={styles.cardTitle}>{todayPlan?.title || 'Rest & Recovery'}</Text>
-          </View>
-          <Badge
-            label={todayPlan?.is_rest_day ? 'REST' : 'ACTIVE'}
-            variant={todayPlan?.is_rest_day ? 'neutral' : 'primary'}
-          />
-        </View>
 
-        {muscleList.length > 0 && (
-          <View style={styles.muscleRow}>
-            {muscleList.map((m) => (
-              <Badge key={m} label={m} variant="secondary" style={styles.muscleBadge} />
-            ))}
-          </View>
-        )}
+          {muscleList.length > 0 && (
+            <View style={styles.muscleRow}>
+              {muscleList.map((m) => (
+                <Badge key={m} label={m} variant="secondary" style={styles.muscleBadge} />
+              ))}
+            </View>
+          )}
 
-        <View style={styles.actionRow}>
-          <Button
-            title="Start Workout"
-            icon={<Dumbbell size={18} color="#0B0F14" />}
-            onPress={() => router.push('/workout')}
-            style={styles.primaryButton}
-          />
-        </View>
-      </Card>
+          <View style={styles.actionRow}>
+            <Button
+              title="Start Workout"
+              icon={<Dumbbell size={18} color="#0B0F14" />}
+              onPress={() => router.push('/workout')}
+              style={styles.primaryButton}
+            />
+          </View>
+        </Card>
+      )}
 
       {/* Daily Nutrition Summary */}
       <Card style={styles.nutritionCard}>
