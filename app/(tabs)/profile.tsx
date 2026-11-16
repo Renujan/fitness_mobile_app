@@ -322,6 +322,22 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
+      {/* App Info & About */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>About FitTrack</Text>
+      </View>
+
+      <Card style={[styles.actionCard, { marginBottom: 24 }]}>
+        <View style={styles.rowItem}>
+          <ShieldCheck size={20} color={Palette.primary} />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.actionTitle}>FitTrack Mobile v1.0.0</Text>
+            <Text style={styles.actionSub}>Local SQLite Database • Zero tracking & private</Text>
+          </View>
+          <Badge label="OFFLINE" variant="primary" />
+        </View>
+      </Card>
+
       {/* Edit Profile Modal */}
       <Modal
         visible={isEditModalVisible}
