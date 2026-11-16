@@ -9,6 +9,7 @@ import { EmptyState } from '@/src/components/common/EmptyState';
 import { Palette } from '@/constants/Colors';
 import { useDatabase } from '@/src/hooks/useDatabase';
 import { WorkoutRepo } from '@/src/db/repositories/workoutRepo';
+import { GoalsRepo } from '@/src/db/repositories/goalsRepo';
 import { WorkoutSession, Exercise, WorkoutSet } from '@/src/types/database';
 import { RestTimer } from '@/src/components/common/RestTimer';
 import { QuickCalcModal } from '@/src/components/common/QuickCalcModal';
@@ -195,6 +196,28 @@ export default function WorkoutScreen() {
       const totalVolume = currentSets.reduce((sum, s) => sum + s.weight_kg * s.reps, 0);
 
       await WorkoutRepo.completeSession(activeSessionId, duration);
+
+      // Check and unlock milestones
+      try {
+        await GoalsRepo.unlockAchievement('FIRST_WORKOUT');
+        if (totalVolume >= 10000) {
+          await GoalsRepo.unlockAchievement('VOLUME_10TONS');
+        }
+        const hasCenturyBench = currentSets.some(
+          (s) => s.exercise_name?.toLowerCase().includes('bench') && s.weight_kg >= 100
+        );
+        if (hasCenturyBench) {
+          await GoalsRepo.unlockAchievement('CENTURY_BENCH');
+        }
+        const todayStr = new Date().toISOString().split('T')[0];
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+        const weekCount = await WorkoutRepo.getWeeklyConsistency(sevenDaysAgo, todayStr);
+        if (weekCount >= 3) await GoalsRepo.unlockAchievement('STREAK_3');
+        if (weekCount >= 7) await GoalsRepo.unlockAchievement('STREAK_7');
+      } catch (achErr) {
+        console.warn('Failed to evaluate achievements:', achErr);
+      }
+
       await loadSessions();
       setIsSessionModalOpen(false);
       setActiveSessionId(null);
