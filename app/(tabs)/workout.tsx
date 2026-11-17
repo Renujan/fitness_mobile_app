@@ -33,6 +33,7 @@ export default function WorkoutScreen() {
   const [selectedExCategory, setSelectedExCategory] = useState<string>('All');
   const [currentSets, setCurrentSets] = useState<WorkoutSet[]>([]);
   const [setForm, setSetForm] = useState({ weight: '60', reps: '10', rpe: '8' });
+  const [sessionNotes, setSessionNotes] = useState('');
 
   // Custom Exercise Creator Modal State
   const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
@@ -136,6 +137,7 @@ export default function WorkoutScreen() {
       setExercises(allExercises);
       setSelectedExerciseId(allExercises.length > 0 ? allExercises[0].id : null);
       setCurrentSets([]);
+      setSessionNotes('');
       setIsSessionModalOpen(true);
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Could not start workout session');
@@ -211,7 +213,7 @@ export default function WorkoutScreen() {
             text: 'Finish Anyway',
             onPress: async () => {
               const duration = Math.max(1, Math.round((Date.now() - sessionStartTime) / 1000));
-              await WorkoutRepo.completeSession(activeSessionId, duration);
+              await WorkoutRepo.completeSession(activeSessionId, duration, sessionNotes.trim() || undefined);
               await loadSessions();
               setIsSessionModalOpen(false);
               setActiveSessionId(null);
@@ -226,7 +228,7 @@ export default function WorkoutScreen() {
       const duration = Math.max(1, Math.round((Date.now() - sessionStartTime) / 1000));
       const totalVolume = currentSets.reduce((sum, s) => sum + s.weight_kg * s.reps, 0);
 
-      await WorkoutRepo.completeSession(activeSessionId, duration);
+      await WorkoutRepo.completeSession(activeSessionId, duration, sessionNotes.trim() || undefined);
 
       // Check and unlock milestones
       try {
@@ -504,6 +506,16 @@ export default function WorkoutScreen() {
                   </View>
                 ))
               )}
+
+              <Text style={[styles.inputLabel, { marginTop: 16 }]}>Workout Notes (Optional)</Text>
+              <TextInput
+                style={[styles.textInput, { height: 60, textAlignVertical: 'top' }]}
+                value={sessionNotes}
+                onChangeText={setSessionNotes}
+                placeholder="How did the session feel? Any PRs or fatigue?"
+                placeholderTextColor={Palette.textMuted}
+                multiline
+              />
             </ScrollView>
 
             <View style={styles.modalBtnRow}>
@@ -592,6 +604,13 @@ export default function WorkoutScreen() {
                     </View>
                   ))
                 )}
+
+                {selectedHistorySession?.notes ? (
+                  <View style={styles.historyNotesCard}>
+                    <Text style={styles.historyNotesLabel}>SESSION NOTES</Text>
+                    <Text style={styles.historyNotesText}>{selectedHistorySession.notes}</Text>
+                  </View>
+                ) : null}
               </ScrollView>
             )}
 
@@ -917,6 +936,26 @@ const styles = StyleSheet.create({
   },
   formRow: {
     flexDirection: 'row',
+  },
+  historyNotesCard: {
+    marginTop: 14,
+    padding: 12,
+    backgroundColor: Palette.cardElevated,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Palette.border,
+  },
+  historyNotesLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Palette.primary,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  historyNotesText: {
+    fontSize: 13,
+    color: Palette.text,
+    lineHeight: 18,
   },
   headerTimerBtn: {
     padding: 6,
